@@ -3,6 +3,7 @@
 #include "vmlinux.h"
 
 #include "common.h"
+#include <bpf/bpf_core_read.h>
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 
@@ -12,7 +13,7 @@ struct {
 } events SEC(".maps");
 
 SEC("kprobe/do_sys_openat2")
-int kprobe__do_sys_openat2(struct pt_regs *ctx) {
+int BPF_KPROBE(kprobe__do_sys_openat2, int dfd, const char *filename) {
     struct event *e;
     e = bpf_ringbuf_reserve(&events, sizeof(*e), 0);
     if (!e) {
@@ -20,7 +21,7 @@ int kprobe__do_sys_openat2(struct pt_regs *ctx) {
     }
 
     e->pid = bpf_get_current_pid_tgid() >> 32;
-    bpf_probe_read(&e->filename, sizeof(e->filename), (void *)PT_REGS_PARM2(ctx));
+    bpf_core_read_user_str(e->filename, sizeof(e->filename), filename);
 
     bpf_ringbuf_submit(e, 0);
 
