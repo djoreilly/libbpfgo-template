@@ -11,6 +11,16 @@ ARCH := $(shell uname -m)
 ARCH := $(subst x86_64,amd64,$(ARCH))
 GOARCH := $(ARCH)
 
+ifeq ($(GOARCH), amd64)
+        BPFARCH=x86
+else ifeq ($(GOARCH), arm64)
+        BPFARCH=arm64
+else ifeq ($(GOARCH), ppc64le)
+        BPFARCH=powerpc
+else ifeq ($(GOARCH), s390x)
+        BPFARCH=s390
+endif
+
 BPFTOOL = $(shell which bpftool || /bin/false)
 BTFFILE = /sys/kernel/btf/vmlinux
 DBGVMLINUX = /usr/lib/debug/boot/vmlinux-$(shell uname -r)
@@ -96,7 +106,7 @@ $(OUTPUT)/libbpf:
 ## program bpf dependency
 
 $(PROGRAM).bpf.o: $(PROGRAM).bpf.c | vmlinuxh
-	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_x86 -I. -I$(OUTPUT) -c $< -o $@
+	$(CLANG) $(CFLAGS) -target bpf -D__TARGET_ARCH_$(BPFARCH) -I. -I$(OUTPUT) -c $< -o $@
 
 ## GO example
 

@@ -51,12 +51,17 @@ func main() {
 	if err := bpfModule.BPFLoadObject(); err != nil {
 		panic(err)
 	}
-	prog, err := bpfModule.GetProgram("kprobe__do_sys_openat2")
-	if err != nil {
-		panic(err)
-	}
-	if _, err := prog.AttachKprobe("do_sys_openat2"); err != nil {
-		panic(err)
+
+	progIter := bpfModule.Iterator()
+	for {
+		prog := progIter.NextProgram()
+		if prog == nil {
+			break
+		}
+		_, err = prog.AttachGeneric()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	eventsChan := make(chan []byte)
